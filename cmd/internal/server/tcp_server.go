@@ -13,9 +13,10 @@ const (
 
 type tcpServer struct {
 	tcpListener net.Listener
-	fromClient  chan []byte
-	toClient    chan string
-	errChan     chan error
+	// TODO: controller 에 해당하는 구조체 추가
+	fromClient chan []byte // TODO: 클라이언트와 협의 후 데이터 타입 변경
+	toClient   chan []byte // TODO: 클라이언트와 협의 후 데이터 타입 변경
+	errChan    chan error
 }
 
 func NewTCPServer(address string) TCPServer {
@@ -26,7 +27,7 @@ func NewTCPServer(address string) TCPServer {
 		log.Panic(err)
 	}
 	server.fromClient = make(chan []byte, MaxUser)
-	server.toClient = make(chan string, MaxUser)
+	server.toClient = make(chan []byte, MaxUser)
 	server.errChan = make(chan error, 1)
 	return server
 }
@@ -34,6 +35,7 @@ func NewTCPServer(address string) TCPServer {
 func (t *tcpServer) Run() {
 	defer log.Println("Stopped TCPServer")
 	log.Println("Start TCPServer")
+	// TODO: controller 에 해당하는 구조체가 fromClient, toClient, errChan 을 생성자 파라미터로 받아서 알맞게 처리하도록 한다. go 루틴 사용
 	for {
 		log.Println("waiting for TCP HandShake")
 		conn, err := t.Accept()
@@ -42,6 +44,9 @@ func (t *tcpServer) Run() {
 			log.Panic(err)
 		}
 		go t.ReadPacket(conn)
+		if len(t.errChan) != 0 {
+			log.Panic(<-t.errChan)
+		}
 	}
 }
 
