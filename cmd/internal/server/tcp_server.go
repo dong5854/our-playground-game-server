@@ -1,0 +1,70 @@
+package server
+
+import (
+	"io"
+	"log"
+	"net"
+)
+
+const (
+	TCP     = "tcp"
+	MaxUser = 1000
+)
+
+type tcpServer struct {
+	tcpListener net.Listener
+	fromClient  chan []byte
+	toClient    chan string
+	errChan     chan error
+}
+
+func NewTCPServer(address string) TCPServer {
+	server := new(tcpServer)
+	var err error
+	server.tcpListener, err = net.Listen(TCP, address)
+	if err != nil {
+		log.Panic(err)
+	}
+	server.fromClient = make(chan []byte, MaxUser)
+	server.toClient = make(chan string, MaxUser)
+	server.errChan = make(chan error, 1)
+	return server
+}
+
+func (t *tcpServer) Run() {
+	defer log.Println("Stopped TCPServer")
+	log.Println("Start TCPServer")
+	for {
+		log.Println("waiting for TCP HandShake")
+		conn, err := t.Accept()
+		log.Println("successfully HandShaken")
+		if err != nil {
+			log.Panic(err)
+		}
+		go t.ReadPacket(conn)
+	}
+}
+
+func (t *tcpServer) Accept() (net.Conn, error) {
+	conn, err := t.tcpListener.Accept() // 핸드세이크 완료까지 블로킹
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
+func (t *tcpServer) ReadPacket(conn net.Conn) {
+	defer conn.Close()
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		if err != io.EOF {
+			t.errChan <- err
+		}
+	}
+	t.fromClient <- buf[:n]
+}
+
+func (t *tcpServer) Close() error {
+	return t.tcpListener.Close()
+}
