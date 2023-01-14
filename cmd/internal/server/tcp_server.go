@@ -50,14 +50,6 @@ func (t *tcpServer) Run() {
 	}
 }
 
-func (t *tcpServer) Accept() (net.Conn, error) {
-	conn, err := t.tcpListener.Accept() // 핸드세이크 완료까지 블로킹
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
-}
-
 func (t *tcpServer) ReadPacket(conn net.Conn) {
 	defer conn.Close()
 	buf := make([]byte, 1024)
@@ -68,8 +60,4 @@ func (t *tcpServer) ReadPacket(conn net.Conn) {
 		}
 	}
 	t.fromClient <- buf[:n]
-}
-
-func (t *tcpServer) Close() error {
-	return t.tcpListener.Close()
 }
