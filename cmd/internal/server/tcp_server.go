@@ -12,7 +12,7 @@ const (
 )
 
 type tcpServer struct {
-	tcpListener net.Listener
+	net.Listener
 	// TODO: controller 에 해당하는 구조체 추가
 	fromClient chan []byte // TODO: 클라이언트와 협의 후 데이터 타입 변경
 	toClient   chan []byte // TODO: 클라이언트와 협의 후 데이터 타입 변경
@@ -22,7 +22,7 @@ type tcpServer struct {
 func NewTCPServer(address string) TCPServer {
 	server := new(tcpServer)
 	var err error
-	server.tcpListener, err = net.Listen(TCP, address)
+	server.Listener, err = net.Listen(TCP, address)
 	if err != nil {
 		log.Panic(err)
 	}
