@@ -1,30 +1,33 @@
 package threadsafe
 
-import "sync"
+import (
+	"net"
+	"sync"
+)
 
-type List struct {
+type ClientList struct {
 	sync.RWMutex
-	list []string
+	list []net.Conn
 }
 
-func (l *List) Append(i string) {
+func (l *ClientList) Append(c net.Conn) {
 	l.Lock()
 	defer l.Unlock()
-	l.list = append(l.list, i)
+	l.list = append(l.list, c)
 }
 
-func (l *List) Remove(i string) {
+func (l *ClientList) Remove(c net.Conn) {
 	l.Lock()
 	defer l.Unlock()
 	for idx, val := range l.list {
-		if val == i {
+		if val == c {
 			l.list = append(l.list[:idx], l.list[idx+1:]...)
 			return
 		}
 	}
 }
 
-func (l *List) Get() []string {
+func (l *ClientList) Get() []net.Conn {
 	l.RLock()
 	defer l.RUnlock()
 	return l.list
