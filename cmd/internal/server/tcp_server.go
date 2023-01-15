@@ -4,6 +4,9 @@ import (
 	"io"
 	"log"
 	"net"
+
+	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/handler"
+	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/util/threadsafe"
 )
 
 const (
@@ -13,10 +16,9 @@ const (
 
 type tcpServer struct {
 	net.Listener
-	// TODO: controller 에 해당하는 구조체 추가
-	fromClient chan []byte // TODO: 클라이언트와 협의 후 데이터 타입 변경
-	toClient   chan []byte // TODO: 클라이언트와 협의 후 데이터 타입 변경
-	errChan    chan error
+	handler.TCPHandler
+	*threadsafe.TCPChannels
+	*threadsafe.ClientList
 }
 
 func NewTCPServer(address string) TCPServer {
@@ -26,16 +28,20 @@ func NewTCPServer(address string) TCPServer {
 	if err != nil {
 		log.Panic(err)
 	}
-	server.fromClient = make(chan []byte, MaxUser)
-	server.toClient = make(chan []byte, MaxUser)
-	server.errChan = make(chan error, 1)
+	server.TCPChannels = &threadsafe.TCPChannels{
+		FromClient: make(chan []byte, MaxUser),
+		ToClient:   make(chan []byte, MaxUser),
+		ErrChan:    make(chan error, 1),
+	}
+	server.ClientList = new(threadsafe.ClientList)
+	server.TCPHandler = handler.NewTCPHandler(server.TCPChannels, server.ClientList)
 	return server
 }
 
 func (t *tcpServer) Run() {
 	defer log.Println("Stopped TCPServer")
 	log.Println("Start TCPServer")
-	// TODO: controller 에 해당하는 구조체가 fromClient, toClient, errChan 을 생성자 파라미터로 받아서 알맞게 처리하도록 한다. go 루틴 사용
+	go t.HandlePacket() // 패킷 핸들링
 	for {
 		log.Println("waiting for TCP HandShake")
 		conn, err := t.Accept()
@@ -43,9 +49,10 @@ func (t *tcpServer) Run() {
 		if err != nil {
 			log.Panic(err)
 		}
+		t.ClientList.Append(conn)
 		go t.ReadPacket(conn)
-		if len(t.errChan) != 0 {
-			log.Panic(<-t.errChan)
+		if len(t.ErrChan) != 0 {
+			log.Panic(<-t.ErrChan)
 		}
 	}
 }
@@ -56,8 +63,8 @@ func (t *tcpServer) ReadPacket(conn net.Conn) {
 	n, err := conn.Read(buf)
 	if err != nil {
 		if err != io.EOF {
-			t.errChan <- err
+			t.ErrChan <- err
 		}
 	}
-	t.fromClient <- buf[:n]
+	t.FromClient <- buf[:n]
 }
