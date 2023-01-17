@@ -1,16 +1,22 @@
 package handler
 
-import "github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/util/threadsafe"
+import (
+	"log"
+	"net"
+	"sync"
+
+	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/util/threadsafe"
+)
 
 type tcpHandler struct {
+	clientMap *sync.Map
 	*threadsafe.TCPChannels
-	*threadsafe.ClientList
 }
 
-func NewTCPHandler(channelSet *threadsafe.TCPChannels, ClientList *threadsafe.ClientList) TCPHandler {
+func NewTCPHandler(channelSet *threadsafe.TCPChannels, ClientMap *sync.Map) TCPHandler {
 	return &tcpHandler{
 		TCPChannels: channelSet,
-		ClientList:  ClientList,
+		clientMap:   ClientMap,
 	}
 }
 
@@ -21,14 +27,18 @@ func (t *tcpHandler) HandlePacket() {
 }
 
 func (t *tcpHandler) echoToAllClients(data []byte) {
-	t.ClientList.RLock()
-	defer t.ClientList.RUnlock()
-	clients := t.ClientList.Get()
-	for _, client := range clients {
-		_, err := client.Write(data)
-		if err != nil {
-			t.ErrChan <- err
-			break
+	t.clientMap.Range(func(key, value any) bool {
+		if conn, ok := value.(net.Conn); ok {
+			if _, err := conn.Write(data); err != nil {
+				log.Println("error on writing to connection")
+				t.removeClient(key.(string), conn)
+			}
 		}
-	}
+		return true
+	})
+}
+
+func (t *tcpHandler) removeClient(uuid string, client net.Conn) {
+	defer client.Close()
+	t.clientMap.Delete(uuid)
 }

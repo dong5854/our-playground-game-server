@@ -4,6 +4,9 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
+
+	"github.com/google/uuid"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/util/threadsafe"
@@ -17,8 +20,8 @@ const (
 type tcpServer struct {
 	net.Listener
 	handler.TCPHandler
+	clientMap *sync.Map
 	*threadsafe.TCPChannels
-	*threadsafe.ClientList
 }
 
 func NewTCPServer(address string) TCPServer {
@@ -33,8 +36,8 @@ func NewTCPServer(address string) TCPServer {
 		ToClient:   make(chan []byte, MaxUser),
 		ErrChan:    make(chan error, 1),
 	}
-	server.ClientList = new(threadsafe.ClientList)
-	server.TCPHandler = handler.NewTCPHandler(server.TCPChannels, server.ClientList)
+	server.clientMap = &sync.Map{}
+	server.TCPHandler = handler.NewTCPHandler(server.TCPChannels, server.clientMap)
 	return server
 }
 
@@ -49,8 +52,11 @@ func (t *tcpServer) Run() {
 		if err != nil {
 			log.Panic(err)
 		}
-		t.ClientList.Append(conn)
-		go t.ReadPacket(conn)
+
+		id := uuid.New().String()
+		t.clientMap.Store(id, conn)
+
+		go t.ReadPacket(conn) // TODO: 한번 읽고 말게 아니라 계속 읽어 줘야하니까 주기적으로 실행되어야함, 그리고 tcp handler 쪽에서 관리하는게 맞을 것 같음
 		if len(t.ErrChan) != 0 {
 			log.Panic(<-t.ErrChan)
 		}
