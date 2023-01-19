@@ -19,9 +19,9 @@ type tcpHandler struct {
 	tcpChannels *threadsafe.TCPChannels
 }
 
-func NewTCPHandler(channelSet *threadsafe.TCPChannels, ClientMap *sync.Map) TCPHandler {
+func NewTCPHandler(tcpChannels *threadsafe.TCPChannels, ClientMap *sync.Map) TCPHandler {
 	return &tcpHandler{
-		tcpChannels: channelSet,
+		tcpChannels: tcpChannels,
 		clientMap:   ClientMap,
 	}
 }
@@ -40,7 +40,7 @@ func (t *tcpHandler) HandlePacket() {
 		if err := proto.Unmarshal(data, message); err != nil {
 			t.tcpChannels.ErrChan <- err
 		}
-		
+
 		if message.Query == ECHO {
 			go t.echoToAllClients(data)
 		}
