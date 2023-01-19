@@ -10,22 +10,26 @@ import (
 )
 
 type tcpHandler struct {
-	clientMap *sync.Map
-	*threadsafe.TCPChannels
+	clientMap   *sync.Map
+	tcpChannels *threadsafe.TCPChannels
 }
 
 func NewTCPHandler(channelSet *threadsafe.TCPChannels, ClientMap *sync.Map) TCPHandler {
 	return &tcpHandler{
-		TCPChannels: channelSet,
+		tcpChannels: channelSet,
 		clientMap:   ClientMap,
 	}
+}
+
+func (t *tcpHandler) TCPChannel() *threadsafe.TCPChannels {
+	return t.tcpChannels
 }
 
 func (t *tcpHandler) HandlePacket() {
 	go t.readPacket() // 패킷을 읽어들이는 고루틴 하나 생성
 
 	for { // 데이터를 받아와 데이터의 종류마다 다른 메소드로 핸들링.
-		data := <-t.FromClient
+		data := <-t.tcpChannels.FromClient
 		go t.echoToAllClients(data)
 	}
 }
@@ -45,7 +49,7 @@ func (t *tcpHandler) readPacket() {
 				}
 
 				if n > 0 { // 읽어들인 값이 없으면 채널에 값을 보내지 않음
-					t.FromClient <- buf[:n]
+					t.tcpChannels.FromClient <- buf[:n]
 				}
 			}
 			return true

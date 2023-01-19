@@ -23,20 +23,16 @@ type tcpServer struct {
 	*threadsafe.TCPChannels
 }
 
-func NewTCPServer(address string) TCPServer {
+func NewTCPServer(address string, handler handler.TCPHandler) TCPServer {
 	server := new(tcpServer)
 	var err error
 	server.Listener, err = net.Listen(TCP, address)
 	if err != nil {
 		log.Panic(err)
 	}
-	server.TCPChannels = &threadsafe.TCPChannels{
-		FromClient: make(chan []byte, MaxUser),
-		ToClient:   make(chan []byte, MaxUser),
-		ErrChan:    make(chan error, 1),
-	}
+	server.TCPChannels = handler.TCPChannel()
 	server.clientMap = &sync.Map{}
-	server.TCPHandler = handler.NewTCPHandler(server.TCPChannels, server.clientMap)
+	server.TCPHandler = handler
 	return server
 }
 
