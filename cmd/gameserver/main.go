@@ -3,9 +3,9 @@ package main
 import (
 	"sync"
 
-	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/handler"
-	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/server"
-	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/util/threadsafe"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/server"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
 
 func main() {

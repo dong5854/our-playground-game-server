@@ -9,7 +9,7 @@ import (
 	idl "github.com/Team-OurPlayground/idl/proto"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/util/threadsafe"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
 
 const (
