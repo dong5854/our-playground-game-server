@@ -6,8 +6,13 @@ import (
 	"net"
 	"sync"
 
+	idl "github.com/Team-OurPlayground/idl/proto"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/util/threadsafe"
 )
+
+const ECHO = "echo"
 
 type tcpHandler struct {
 	clientMap   *sync.Map
@@ -30,7 +35,15 @@ func (t *tcpHandler) HandlePacket() {
 
 	for { // 데이터를 받아와 데이터의 종류마다 다른 메소드로 핸들링.
 		data := <-t.tcpChannels.FromClient
-		go t.echoToAllClients(data)
+
+		message := &idl.SearchRequest{}
+		if err := proto.Unmarshal(data, message); err != nil {
+			t.tcpChannels.ErrChan <- err
+		}
+		
+		if message.Query == ECHO {
+			go t.echoToAllClients(data)
+		}
 	}
 }
 
