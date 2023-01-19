@@ -9,7 +9,12 @@ import (
 )
 
 func main() {
-	tcpHandler := handler.NewTCPHandler(new(threadsafe.TCPChannels), new(sync.Map))
+	tcpChannels := &threadsafe.TCPChannels{
+		FromClient: make(chan []byte, handler.MaxUser),
+		ToClient:   make(chan []byte, handler.MaxUser),
+		ErrChan:    make(chan error, 1),
+	}
+	tcpHandler := handler.NewTCPHandler(tcpChannels, new(sync.Map))
 	server := server.NewTCPServer("127.0.0.1:6112", tcpHandler)
 	server.Run()
 	defer server.Close()

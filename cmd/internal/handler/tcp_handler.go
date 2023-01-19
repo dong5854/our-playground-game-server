@@ -12,7 +12,10 @@ import (
 	"github.com/Team-OurPlayground/our-playground-game-server/cmd/internal/util/threadsafe"
 )
 
-const ECHO = "echo"
+const (
+	ECHO    = "echo"
+	MaxUser = 1000
+)
 
 type tcpHandler struct {
 	clientMap   *sync.Map

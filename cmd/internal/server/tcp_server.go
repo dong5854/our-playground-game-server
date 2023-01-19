@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	TCP     = "tcp"
-	MaxUser = 1000
+	TCP = "tcp"
 )
 
 type tcpServer struct {
