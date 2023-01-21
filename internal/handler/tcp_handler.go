@@ -6,9 +6,7 @@ import (
 	"net"
 	"sync"
 
-	idl "github.com/Team-OurPlayground/idl/proto"
-	"google.golang.org/protobuf/proto"
-
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
 
@@ -18,12 +16,14 @@ const (
 )
 
 type tcpHandler struct {
+	parser      parser.Parser
 	clientMap   *sync.Map
 	tcpChannels *threadsafe.TCPChannels
 }
 
-func NewTCPHandler(tcpChannels *threadsafe.TCPChannels, ClientMap *sync.Map) TCPHandler {
+func NewTCPHandler(parser parser.Parser, tcpChannels *threadsafe.TCPChannels, ClientMap *sync.Map) TCPHandler {
 	return &tcpHandler{
+		parser:      parser,
 		tcpChannels: tcpChannels,
 		clientMap:   ClientMap,
 	}
@@ -33,18 +33,17 @@ func (t *tcpHandler) TCPChannel() *threadsafe.TCPChannels {
 	return t.tcpChannels
 }
 
-func (t *tcpHandler) HandlePacket() {
+func (t *tcpHandler) HandlePacket() { // handlePacket 함수는 하나의 고루틴에서만 돌아감
 	go t.readPacket() // 패킷을 읽어들이는 고루틴 하나 생성
 
 	for { // 데이터를 받아와 데이터의 종류마다 다른 메소드로 핸들링.
 		data := <-t.tcpChannels.FromClient
 
-		message := &idl.SearchRequest{}
-		if err := proto.Unmarshal(data, message); err != nil {
+		if err := t.parser.Unmarshal(data); err != nil {
 			t.tcpChannels.ErrChan <- err
 		}
 
-		if message.Query == ECHO {
+		if t.parser.Query() == ECHO {
 			go t.echoToAllClients(data)
 		}
 	}
