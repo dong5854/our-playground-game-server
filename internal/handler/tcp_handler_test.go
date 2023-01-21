@@ -17,14 +17,17 @@ import (
 
 type tcpHandlerSuite struct {
 	suite.Suite
-	done        chan struct{}
-	tcpHandler  handler.TCPHandler
-	tcpChannels *threadsafe.TCPChannels
-	clientMap   *sync.Map
+	listenerChan chan struct{}
+	dialChan     chan struct{}
+	tcpHandler   handler.TCPHandler
+	tcpChannels  *threadsafe.TCPChannels
+	clientMap    *sync.Map
 }
 
 func (suite *tcpHandlerSuite) SetupSuite() {
-	suite.done = make(chan struct{})
+	suite.listenerChan = make(chan struct{})
+	suite.dialChan = make(chan struct{})
+
 	suite.tcpChannels = &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
@@ -47,12 +50,15 @@ func (suite *tcpHandlerSuite) TestHandlePacket() {
 		suite.NoError(err, "proto Marshal Error at TestHandlePacket")
 	}
 
+	<-suite.dialChan // 데이퍼 받을 준비 완료 확인 후, 전송
+
 	suite.tcpChannels.FromClient <- echoMessageByte
 
 	go suite.tcpHandler.HandlePacket()
 
-	<-suite.done
-	<-suite.done
+	// 테스트 끝날 때까지 대기
+	<-suite.listenerChan
+	<-suite.dialChan
 }
 
 func (suite *tcpHandlerSuite) setConnections() {
@@ -63,7 +69,7 @@ func (suite *tcpHandlerSuite) setConnections() {
 
 	go func() { // Listener
 		defer func() {
-			suite.done <- struct{}{}
+			suite.listenerChan <- struct{}{}
 			suite.T().Log("listening connections stored")
 		}()
 
@@ -74,12 +80,12 @@ func (suite *tcpHandlerSuite) setConnections() {
 		}
 		id := uuid.New().String()
 		suite.clientMap.Store(id, conn)
-		suite.T().Log("clientMap saved")
+		suite.T().Logf("clientMap saved %s", id)
 	}()
 
 	go func() { // Dial
 		defer func() {
-			suite.done <- struct{}{}
+			suite.dialChan <- struct{}{}
 			suite.T().Log("dial finished")
 		}()
 		suite.T().Log("dial start")
@@ -88,8 +94,12 @@ func (suite *tcpHandlerSuite) setConnections() {
 			suite.NoError(err, "net.Dial Error at addClients")
 		}
 
+		suite.dialChan <- struct{}{} // 데이터 받을 준비 완료
+
 		buf := make([]byte, 1024)
+		suite.T().Log("starting to Read")
 		n, err := conn.Read(buf)
+		suite.T().Log("data read")
 		if err != nil {
 			if err != io.EOF {
 				suite.NoError(err, "conn.Read Error at addClients")
