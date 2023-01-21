@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
 
@@ -19,6 +20,7 @@ type tcpHandlerSuite struct {
 	suite.Suite
 	listenerChan chan struct{}
 	dialChan     chan struct{}
+	parser       parser.Parser
 	tcpHandler   handler.TCPHandler
 	tcpChannels  *threadsafe.TCPChannels
 	clientMap    *sync.Map
@@ -28,14 +30,16 @@ func (suite *tcpHandlerSuite) SetupSuite() {
 	suite.listenerChan = make(chan struct{})
 	suite.dialChan = make(chan struct{})
 
+	suite.parser = parser.NewProtobufParser()
 	suite.tcpChannels = &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
 		ErrChan:    make(chan error, 1),
 	}
 	suite.clientMap = new(sync.Map)
+
 	suite.setConnections()
-	suite.tcpHandler = handler.NewTCPHandler(suite.tcpChannels, suite.clientMap)
+	suite.tcpHandler = handler.NewTCPHandler(suite.parser, suite.tcpChannels, suite.clientMap)
 }
 
 func (suite *tcpHandlerSuite) TestHandlePacket() {
