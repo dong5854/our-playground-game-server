@@ -6,10 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	idl "github.com/Team-OurPlayground/idl/proto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/proto"
+	"github.com/vmihailenco/msgpack"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
@@ -18,19 +17,22 @@ import (
 
 type tcpHandlerSuite struct {
 	suite.Suite
-	listenerChan chan struct{}
-	dialChan     chan struct{}
-	parser       parser.Parser
-	tcpHandler   handler.TCPHandler
-	tcpChannels  *threadsafe.TCPChannels
-	clientMap    *sync.Map
+	listenerChan      chan struct{}
+	dialChan          chan struct{}
+	parser            parser.Parser
+	DialReceiveParser parser.Parser
+	tcpHandler        handler.TCPHandler
+	tcpChannels       *threadsafe.TCPChannels
+	clientMap         *sync.Map
 }
 
 func (suite *tcpHandlerSuite) SetupSuite() {
 	suite.listenerChan = make(chan struct{})
 	suite.dialChan = make(chan struct{})
 
-	suite.parser = parser.NewProtobufParser()
+	suite.parser = parser.NewMsgPackParser()
+	suite.DialReceiveParser = parser.NewMsgPackParser()
+
 	suite.tcpChannels = &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
@@ -43,26 +45,26 @@ func (suite *tcpHandlerSuite) SetupSuite() {
 }
 
 func (suite *tcpHandlerSuite) TestHandlePacket() {
-	echoMessage := &idl.SearchRequest{
+	echoMessage := &parser.Message{
 		Query: handler.ECHO,
 		PosX:  1,
 		PosY:  1,
 	}
 
-	echoMessageByte, err := proto.Marshal(echoMessage)
+	echoMessageByte, err := msgpack.Marshal(echoMessage)
 	if err != nil {
 		suite.NoError(err, "proto Marshal Error at TestHandlePacket")
 	}
 
-	<-suite.dialChan // 데이퍼 받을 준비 완료 확인 후, 전송
+	<-suite.dialChan // 데이터 받을 준비 완료 확인 후, 전송
 
 	suite.tcpChannels.FromClient <- echoMessageByte
 
+	suite.T().Log("handler Start")
 	go suite.tcpHandler.HandlePacket()
-
 	// 테스트 끝날 때까지 대기
-	<-suite.listenerChan
 	<-suite.dialChan
+	suite.Equal(0, len(suite.tcpChannels.ErrChan), "error exist")
 }
 
 func (suite *tcpHandlerSuite) setConnections() {
@@ -98,10 +100,12 @@ func (suite *tcpHandlerSuite) setConnections() {
 			suite.NoError(err, "net.Dial Error at addClients")
 		}
 
-		suite.dialChan <- struct{}{} // 데이터 받을 준비 완료
-
 		buf := make([]byte, 1024)
 		suite.T().Log("starting to Read")
+
+		<-suite.listenerChan         // 서버와 연결 완료
+		suite.dialChan <- struct{}{} // 데이터 받을 준비 완료
+
 		n, err := conn.Read(buf)
 		suite.T().Log("data read")
 		if err != nil {
@@ -110,13 +114,13 @@ func (suite *tcpHandlerSuite) setConnections() {
 			}
 		}
 
-		searchRequest := &idl.SearchRequest{}
-		if err := proto.Unmarshal(buf[:n], searchRequest); err != nil {
-			suite.NoError(err, "proto.Unmarshal error")
+		err = suite.DialReceiveParser.Unmarshal(buf[:n])
+		if err != nil {
+			suite.NoError(err, "message.Unmarshal error")
 		}
 		suite.T().Log("dial received")
-		suite.T().Logf("searchRequest.Query: %s, searchRequest.PosX: %d, searchRequest.PosY: %d", searchRequest.Query, searchRequest.PosX, searchRequest.PosY)
-		suite.Equal(handler.ECHO, searchRequest.Query)
+		suite.T().Logf("searchRequest.Query: %s", suite.DialReceiveParser.Query())
+		suite.Equal(handler.ECHO, suite.DialReceiveParser.Query())
 	}()
 }
 
