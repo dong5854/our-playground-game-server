@@ -97,11 +97,12 @@ func (suite *tcpHandlerSuite) setConnections() {
 			suite.NoError(err, "net.Dial Error at addClients")
 		}
 
+		buf := make([]byte, 1024)
+		suite.T().Log("starting to Read")
+
+		<-suite.listenerChan         // 서버와 연결 완료
 		suite.dialChan <- struct{}{} // 데이터 받을 준비 완료
 
-		buf := make([]byte, 1024)
-		<-suite.listenerChan
-		suite.T().Log("starting to Read")
 		n, err := conn.Read(buf)
 		suite.T().Log("data read")
 		if err != nil {
