@@ -6,10 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	idl "github.com/Team-OurPlayground/idl/proto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/proto"
+	"github.com/vmihailenco/msgpack"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
@@ -31,8 +30,8 @@ func (suite *tcpHandlerSuite) SetupSuite() {
 	suite.listenerChan = make(chan struct{})
 	suite.dialChan = make(chan struct{})
 
-	suite.parser = parser.NewProtobufParser()
-	suite.DialReceiveParser = parser.NewProtobufParser()
+	suite.parser = parser.NewMsgPackParser()
+	suite.DialReceiveParser = parser.NewMsgPackParser()
 
 	suite.tcpChannels = &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
@@ -46,13 +45,13 @@ func (suite *tcpHandlerSuite) SetupSuite() {
 }
 
 func (suite *tcpHandlerSuite) TestHandlePacket() {
-	echoMessage := &idl.SearchRequest{
+	echoMessage := &parser.Message{
 		Query: handler.ECHO,
 		PosX:  1,
 		PosY:  1,
 	}
 
-	echoMessageByte, err := proto.Marshal(echoMessage)
+	echoMessageByte, err := msgpack.Marshal(echoMessage)
 	if err != nil {
 		suite.NoError(err, "proto Marshal Error at TestHandlePacket")
 	}
@@ -63,9 +62,9 @@ func (suite *tcpHandlerSuite) TestHandlePacket() {
 
 	suite.T().Log("handler Start")
 	go suite.tcpHandler.HandlePacket()
-
 	// 테스트 끝날 때까지 대기
 	<-suite.dialChan
+	suite.Equal(0, len(suite.tcpChannels.ErrChan), "error exist")
 }
 
 func (suite *tcpHandlerSuite) setConnections() {
