@@ -58,6 +58,7 @@ func (suite *tcpHandlerSuite) TestHandlePacket() {
 
 	suite.tcpChannels.FromClient <- echoMessageByte
 
+	suite.T().Log("handler Start")
 	go suite.tcpHandler.HandlePacket()
 
 	// 테스트 끝날 때까지 대기
@@ -112,7 +113,10 @@ func (suite *tcpHandlerSuite) setConnections() {
 		}
 
 		message := parser.NewProtobufParser()
-		message.Unmarshal(buf[:n])
+		err = message.Unmarshal(buf[:n])
+		if err != nil {
+			suite.NoError(err, "message.Unmarshal error")
+		}
 		suite.T().Log("dial received")
 		suite.T().Logf("searchRequest.Query: %s", message.Query())
 		suite.Equal(handler.ECHO, message.Query())
