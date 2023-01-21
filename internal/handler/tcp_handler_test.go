@@ -18,12 +18,13 @@ import (
 
 type tcpHandlerSuite struct {
 	suite.Suite
-	listenerChan chan struct{}
-	dialChan     chan struct{}
-	parser       parser.Parser
-	tcpHandler   handler.TCPHandler
-	tcpChannels  *threadsafe.TCPChannels
-	clientMap    *sync.Map
+	listenerChan      chan struct{}
+	dialChan          chan struct{}
+	parser            parser.Parser
+	DialReceiveParser parser.Parser
+	tcpHandler        handler.TCPHandler
+	tcpChannels       *threadsafe.TCPChannels
+	clientMap         *sync.Map
 }
 
 func (suite *tcpHandlerSuite) SetupSuite() {
@@ -31,6 +32,8 @@ func (suite *tcpHandlerSuite) SetupSuite() {
 	suite.dialChan = make(chan struct{})
 
 	suite.parser = parser.NewProtobufParser()
+	suite.DialReceiveParser = parser.NewProtobufParser()
+
 	suite.tcpChannels = &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
@@ -112,14 +115,13 @@ func (suite *tcpHandlerSuite) setConnections() {
 			}
 		}
 
-		message := parser.NewProtobufParser()
-		err = message.Unmarshal(buf[:n])
+		err = suite.DialReceiveParser.Unmarshal(buf[:n])
 		if err != nil {
 			suite.NoError(err, "message.Unmarshal error")
 		}
 		suite.T().Log("dial received")
-		suite.T().Logf("searchRequest.Query: %s", message.Query())
-		suite.Equal(handler.ECHO, message.Query())
+		suite.T().Logf("searchRequest.Query: %s", suite.DialReceiveParser.Query())
+		suite.Equal(handler.ECHO, suite.DialReceiveParser.Query())
 	}()
 }
 
