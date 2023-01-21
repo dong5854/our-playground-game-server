@@ -110,13 +110,11 @@ func (suite *tcpHandlerSuite) setConnections() {
 			}
 		}
 
-		searchRequest := &idl.SearchRequest{}
-		if err := proto.Unmarshal(buf[:n], searchRequest); err != nil {
-			suite.NoError(err, "proto.Unmarshal error")
-		}
+		message := parser.NewProtobufParser()
+		message.Unmarshal(buf[:n])
 		suite.T().Log("dial received")
-		suite.T().Logf("searchRequest.Query: %s, searchRequest.PosX: %d, searchRequest.PosY: %d", searchRequest.Query, searchRequest.PosX, searchRequest.PosY)
-		suite.Equal(handler.ECHO, searchRequest.Query)
+		suite.T().Logf("searchRequest.Query: %s", message.Query())
+		suite.Equal(handler.ECHO, message.Query())
 	}()
 }
 
