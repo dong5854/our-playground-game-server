@@ -54,14 +54,13 @@ func (suite *tcpHandlerSuite) TestHandlePacket() {
 		suite.NoError(err, "proto Marshal Error at TestHandlePacket")
 	}
 
-	<-suite.dialChan // 데이퍼 받을 준비 완료 확인 후, 전송
+	<-suite.dialChan // 데이터 받을 준비 완료 확인 후, 전송
 
 	suite.tcpChannels.FromClient <- echoMessageByte
 
 	go suite.tcpHandler.HandlePacket()
 
 	// 테스트 끝날 때까지 대기
-	<-suite.listenerChan
 	<-suite.dialChan
 }
 
@@ -101,6 +100,7 @@ func (suite *tcpHandlerSuite) setConnections() {
 		suite.dialChan <- struct{}{} // 데이터 받을 준비 완료
 
 		buf := make([]byte, 1024)
+		<-suite.listenerChan
 		suite.T().Log("starting to Read")
 		n, err := conn.Read(buf)
 		suite.T().Log("data read")
