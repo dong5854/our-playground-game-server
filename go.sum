@@ -1,5 +1,7 @@
 github.com/Team-OurPlayground/idl v0.0.0-20230116164702-269445ba2388 h1:5zqNMs4qtdW3/zpn1NKZfsDBgthjlqFlzlooWwO4aiI=
 github.com/Team-OurPlayground/idl v0.0.0-20230116164702-269445ba2388/go.mod h1:G0IqxRS3n9sAUdRpQoiButOqKaLotxMw/1yfk2o0X58=
+github.com/Team-OurPlayground/idl v0.0.0-20230121113050-7a52763070ca h1:BTOy2bG0Rmboo3bvGluPuscDWmJtcTw2D62PnvRPBI0=
+github.com/Team-OurPlayground/idl v0.0.0-20230121113050-7a52763070ca/go.mod h1:G0IqxRS3n9sAUdRpQoiButOqKaLotxMw/1yfk2o0X58=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

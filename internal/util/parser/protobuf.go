@@ -1,16 +1,16 @@
 package parser
 
 import (
-	idl "github.com/Team-OurPlayground/idl/proto"
+	"github.com/Team-OurPlayground/idl/goproto"
 	"google.golang.org/protobuf/proto"
 )
 
 type protobufParser struct {
-	protoData *idl.SearchRequest
+	protoData *goproto.Message
 }
 
 func NewProtobufParser() Parser {
-	protoData := new(idl.SearchRequest)
+	protoData := new(goproto.Message)
 	return &protobufParser{protoData: protoData}
 }
 
