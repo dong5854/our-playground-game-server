@@ -27,4 +27,6 @@ COPY --from=build /usr/src/app/cmd/gameserver/our-playground-game /usr/src/app/c
 
 RUN chmod +x /usr/src/app/cmd/gameserver/our-playground-game
 
+EXPOSE 6112
+
 CMD [ "/usr/src/app/cmd/gameserver/our-playground-game" ]
