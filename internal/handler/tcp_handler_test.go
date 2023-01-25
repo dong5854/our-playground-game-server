@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"encoding/json"
 	"io"
 	"net"
 	"sync"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	"github.com/vmihailenco/msgpack"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
@@ -30,8 +30,8 @@ func (suite *tcpHandlerSuite) SetupSuite() {
 	suite.listenerChan = make(chan struct{})
 	suite.dialChan = make(chan struct{})
 
-	suite.parser = parser.NewMsgPackParser()
-	suite.DialReceiveParser = parser.NewMsgPackParser()
+	suite.parser = parser.NewJsonParser()
+	suite.DialReceiveParser = parser.NewJsonParser()
 
 	suite.tcpChannels = &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
@@ -51,7 +51,7 @@ func (suite *tcpHandlerSuite) TestHandlePacket() {
 		PosY:  1,
 	}
 
-	echoMessageByte, err := msgpack.Marshal(echoMessage)
+	echoMessageByte, err := json.Marshal(echoMessage)
 	if err != nil {
 		suite.NoError(err, "proto Marshal Error at TestHandlePacket")
 	}
