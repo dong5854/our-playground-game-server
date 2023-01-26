@@ -11,14 +11,14 @@ import (
 
 func main() {
 
-	parser := parser.NewProtobufParser()
+	parser := parser.NewJsonParser()
 	tcpChannels := &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
 		ErrChan:    make(chan error, 1),
 	}
 	tcpHandler := handler.NewTCPHandler(parser, tcpChannels, new(sync.Map))
-	server := server.NewTCPServer("127.0.0.1:6112", tcpHandler)
+	server := server.NewTCPServer("0.0.0.0:6112", tcpHandler)
 	server.Run()
 	defer server.Close()
 }
