@@ -22,7 +22,7 @@ type tcpServer struct {
 	*threadsafe.TCPChannels
 }
 
-func NewTCPServer(address string, handler handler.TCPHandler) TCPServer {
+func NewTCPServer(address string, handler handler.TCPHandler, clientMap *sync.Map) TCPServer {
 	server := new(tcpServer)
 	var err error
 	server.Listener, err = net.Listen(TCP, address)
@@ -30,7 +30,7 @@ func NewTCPServer(address string, handler handler.TCPHandler) TCPServer {
 		log.Panic(err)
 	}
 	server.TCPChannels = handler.TCPChannel()
-	server.clientMap = &sync.Map{}
+	server.clientMap = clientMap
 	server.TCPHandler = handler
 	return server
 }
@@ -49,6 +49,7 @@ func (t *tcpServer) Run() {
 
 		id := uuid.New().String()
 		t.clientMap.Store(id, conn)
+		log.Println("client connected as id: ", id)
 
 		if len(t.ErrChan) != 0 {
 			log.Panic(<-t.ErrChan)
