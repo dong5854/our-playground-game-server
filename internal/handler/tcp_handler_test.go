@@ -1,7 +1,6 @@
 package handler_test
 
 import (
-	"encoding/json"
 	"io"
 	"net"
 	"sync"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
+	"github.com/vmihailenco/msgpack"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
@@ -30,14 +30,15 @@ func (suite *tcpHandlerSuite) SetupSuite() {
 	suite.listenerChan = make(chan struct{})
 	suite.dialChan = make(chan struct{})
 
-	suite.parser = parser.NewJsonParser()
-	suite.DialReceiveParser = parser.NewJsonParser()
+	suite.parser = parser.NewMsgPackParser()
+	suite.DialReceiveParser = parser.NewMsgPackParser()
 
 	suite.tcpChannels = &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
 		ErrChan:    make(chan error, 1),
 	}
+
 	suite.clientMap = new(sync.Map)
 
 	suite.setConnections()
@@ -45,20 +46,8 @@ func (suite *tcpHandlerSuite) SetupSuite() {
 }
 
 func (suite *tcpHandlerSuite) TestHandlePacket() {
-	echoMessage := &parser.Message{
-		Query: handler.ECHO,
-		PosX:  1,
-		PosY:  1,
-	}
-
-	echoMessageByte, err := json.Marshal(echoMessage)
-	if err != nil {
-		suite.NoError(err, "proto Marshal Error at TestHandlePacket")
-	}
 
 	<-suite.dialChan // 데이터 받을 준비 완료 확인 후, 전송
-
-	suite.tcpChannels.FromClient <- echoMessageByte
 
 	suite.T().Log("handler Start")
 	go suite.tcpHandler.HandlePacket()
@@ -98,6 +87,22 @@ func (suite *tcpHandlerSuite) setConnections() {
 		conn, err := net.Dial("tcp", listener.Addr().String())
 		if err != nil {
 			suite.NoError(err, "net.Dial Error at addClients")
+		}
+
+		echoMessage := &parser.Message{
+			Query: handler.ECHO,
+			PosX:  1,
+			PosY:  1,
+		}
+
+		echoMessageByte, err := msgpack.Marshal(echoMessage)
+		if err != nil {
+			suite.NoError(err, "proto Marshal Error at TestHandlePacket")
+		}
+
+		_, err = conn.Write(echoMessageByte)
+		if err != nil {
+			suite.NoError(err, "conn write Error")
 		}
 
 		buf := make([]byte, 1024)

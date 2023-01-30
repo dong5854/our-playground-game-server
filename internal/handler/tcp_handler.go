@@ -38,11 +38,11 @@ func (t *tcpHandler) HandlePacket() { // handlePacket 함수는 하나의 고루
 
 	for { // 데이터를 받아와 데이터의 종류마다 다른 메소드로 핸들링.
 		data := <-t.tcpChannels.FromClient
-
+		log.Println("data: ", data)
 		if err := t.parser.Unmarshal(data); err != nil {
 			t.tcpChannels.ErrChan <- err
 		}
-
+		log.Println("query:", t.parser.Query())
 		if t.parser.Query() == ECHO {
 			go t.echoToAllClients(data)
 		}
@@ -54,7 +54,9 @@ func (t *tcpHandler) readPacket() {
 		t.clientMap.Range(func(key, value any) bool {
 			if conn, ok := value.(net.Conn); ok {
 				buf := make([]byte, 1024)
+				log.Println("waiting to read from id:", key)
 				n, err := conn.Read(buf) // non-blocking
+				log.Printf("message read: length %d", n)
 
 				if err != nil {
 					if err != io.EOF {
