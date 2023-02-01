@@ -11,8 +11,8 @@ import (
 )
 
 func main() {
-
-	parser := parser.NewMsgPackParser()
+	// TODO: heartbeat 추가하기
+	parser := parser.NewProtobufParser()
 	tcpChannels := &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
