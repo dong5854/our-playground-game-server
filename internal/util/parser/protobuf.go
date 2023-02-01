@@ -6,11 +6,11 @@ import (
 )
 
 type protobufParser struct {
-	protoData *goproto.Message
+	protoData *goproto.Data
 }
 
 func NewProtobufParser() Parser {
-	protoData := new(goproto.Message)
+	protoData := new(goproto.Data)
 	return &protobufParser{protoData: protoData}
 }
 
