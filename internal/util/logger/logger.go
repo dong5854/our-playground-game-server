@@ -1,36 +1,38 @@
 package logger
 
 import (
-	"encoding/json"
-
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var logger *zap.Logger
 
 func init() {
-	var cfg zap.Config
 	var err error
 
-	JSONConf := []byte(`{
-		"level": "debug",
-		"encoding" : "json",
-		"outputPaths": ["stdout"],
-		"errorOutputPaths": ["stderr"],
-		"encoderConfig" : {
-			"messageKey" : "message",
-			"levelKey": "level",
-			"levelEncoder": "lowercase"
-		}
-	}`)
-
-	if err := json.Unmarshal(JSONConf, &cfg); err != nil {
-		panic(err)
-	}
-
-	logger, err = cfg.Build()
+	logger, err = myDebugConfig().Build()
 	if err != nil {
 		panic(err)
+	}
+}
+
+func myDebugConfig() zap.Config {
+	encodeCfg := zapcore.EncoderConfig{
+		StacktraceKey: "stacktrace",
+		MessageKey:    "message",
+		CallerKey:     "caller",
+		EncodeCaller:  zapcore.ShortCallerEncoder,
+		TimeKey:       "timestamp",
+		EncodeTime:    zapcore.ISO8601TimeEncoder,
+		LevelKey:      "level",
+		EncodeLevel:   zapcore.LowercaseLevelEncoder,
+	}
+	return zap.Config{
+		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
+		Encoding:         "json",
+		OutputPaths:      []string{"stdout"},
+		ErrorOutputPaths: []string{"stderr"},
+		EncoderConfig:    encodeCfg,
 	}
 }
 
@@ -39,7 +41,7 @@ func Info(message string, fields ...zap.Field) {
 }
 
 func Debug(message string, fields ...zap.Field) {
-	logger.Info(message, fields...)
+	logger.Debug(message, fields...)
 }
 
 func Error(message string, fields ...zap.Field) {

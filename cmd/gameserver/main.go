@@ -5,6 +5,7 @@ import (
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/server"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/logger"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
@@ -22,5 +23,9 @@ func main() {
 	tcpHandler := handler.NewTCPHandler(parser, tcpChannels, clientMap)
 	server := server.NewTCPServer("0.0.0.0:6112", tcpHandler, clientMap)
 	server.Run()
-	defer server.Close()
+
+	defer func() {
+		server.Close()
+		logger.Sync()
+	}()
 }
