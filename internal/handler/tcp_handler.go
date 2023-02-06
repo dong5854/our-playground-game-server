@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/logger"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
@@ -58,12 +60,21 @@ func (t *tcpHandler) readPacket() {
 			if conn, ok := value.(net.Conn); ok {
 				buf := make([]byte, 1024)
 				logger.Debug("waiting to read from id: " + key.(string))
-				n, err := conn.Read(buf) // non-blocking
+				err := conn.SetReadDeadline(time.Now().Add(1 * time.Millisecond))
+				if err != nil {
+					logger.Error("error while setting deadline to connection: " + key.(string))
+					t.removeClient(key.(string), conn)
+					return true
+				}
+				n, err := conn.Read(buf) // non-blocking, 여기서 멈춤 여기 context deadline 추가
 				logger.Debug("message read: length " + strconv.Itoa(n))
 
 				if err != nil {
+					if os.IsTimeout(err) {
+						return true
+					}
 					if err != io.EOF {
-						logger.Error("error on reading from connection from: " + key.(string))
+						logger.Error("error on reading from connection from: " + key.(string) + err.Error())
 						t.removeClient(key.(string), conn)
 					}
 				}
