@@ -2,5 +2,8 @@ package parser
 
 type Parser interface {
 	Unmarshal(data []byte) error
-	Query() string
+	Function() string
+	Data() string
+	Dx() float32
+	Dy() float32
 }

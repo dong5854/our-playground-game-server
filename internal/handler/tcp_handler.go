@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	ECHO    = "echo"
-	MaxUser = 1000
+	SetID        = "setID"
+	SimulateMove = "simulateMove"
+	MaxUser      = 1000
 )
 
 type tcpHandler struct {
@@ -42,13 +43,16 @@ func (t *tcpHandler) HandlePacket() { // handlePacket 함수는 하나의 고루
 
 	for { // 데이터를 받아와 데이터의 종류마다 다른 메소드로 핸들링.
 		data := <-t.tcpChannels.FromClient
-		logger.Debug("data: " + fmt.Sprint(data))
+		logger.Debug("byte data: " + fmt.Sprint(data))
 		if err := t.parser.Unmarshal(data); err != nil {
 			logger.Error(err.Error())
 			t.tcpChannels.ErrChan <- err
 		}
-		logger.Debug("query: " + t.parser.Query())
-		if t.parser.Query() == ECHO {
+
+		logger.Debug("function: " + t.parser.Function())
+		logger.Debug("data: " + t.parser.Data())
+
+		if t.parser.Function() == SimulateMove {
 			go t.echoToAllClients(data)
 		}
 	}

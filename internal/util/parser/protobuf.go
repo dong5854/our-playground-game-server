@@ -21,6 +21,18 @@ func (p *protobufParser) Unmarshal(data []byte) error {
 	return nil
 }
 
-func (p *protobufParser) Query() string {
-	return p.protoData.Query
+func (p *protobufParser) Function() string {
+	return p.protoData.Function
+}
+
+func (p *protobufParser) Data() string {
+	return p.protoData.Data
+}
+
+func (p *protobufParser) Dx() float32 {
+	return p.protoData.Dx
+}
+
+func (p *protobufParser) Dy() float32 {
+	return p.protoData.Dy
 }
