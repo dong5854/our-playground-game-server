@@ -3,7 +3,7 @@ module github.com/Team-OurPlayground/our-playground-game-server
 go 1.19
 
 require (
-	github.com/Team-OurPlayground/idl v0.0.0-20230206235039-21acd750053d
+	github.com/Team-OurPlayground/idl v0.0.0-20230211194644-c8f76d0c3ae2
 	github.com/golang/protobuf v1.5.0
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.1
