@@ -91,9 +91,10 @@ func (suite *tcpHandlerSuite) setConnections() {
 		}
 
 		echoMessage := &goproto.Data{
-			Query: handler.ECHO,
-			PosX:  1,
-			PosY:  1,
+			Function: handler.SimulateMove,
+			Data:     "dong5854",
+			Dx:       1.2,
+			Dy:       1.3,
 		}
 
 		echoMessageByte, err := proto.Marshal(echoMessage)
@@ -125,8 +126,14 @@ func (suite *tcpHandlerSuite) setConnections() {
 			suite.NoError(err, "message.Unmarshal error")
 		}
 		suite.T().Log("dial received")
-		suite.T().Logf("searchRequest.Query: %s", suite.DialReceiveParser.Query())
-		suite.Equal(handler.ECHO, suite.DialReceiveParser.Query())
+		suite.T().Logf("recieved protobuf function: %s", suite.DialReceiveParser.Function())
+		suite.T().Logf("recieved protobuf data: %s", suite.DialReceiveParser.Data())
+		suite.T().Logf("recieved protobuf dx: %f", suite.DialReceiveParser.Dx())
+		suite.T().Logf("recieved protobuf dy: %f", suite.DialReceiveParser.Dy())
+		suite.Equal(handler.SimulateMove, suite.DialReceiveParser.Function())
+		suite.Equal("dong5854", suite.DialReceiveParser.Data())
+		suite.Equal(float32(1.2), suite.DialReceiveParser.Dx())
+		suite.Equal(float32(1.3), suite.DialReceiveParser.Dy())
 	}()
 }
 
