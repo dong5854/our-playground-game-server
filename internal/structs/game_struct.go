@@ -3,11 +3,11 @@ package server
 import "net"
 
 type Room struct {
-	id     string
-	player []*Player
+	ID     string
+	Player []*Player
 }
 
 type Player struct {
-	id   string
-	conn net.Conn
+	ID   string
+	Conn net.Conn
 }
