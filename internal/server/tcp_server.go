@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/structs"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/logger"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
@@ -84,9 +85,9 @@ func (t *tcpServer) authenticatePlayer(conn net.Conn) {
 	// TODO: jwt 토큰으로 인증하는 프로세스 개발 필요, 클라이언트 개발 편의성을 위해 후순위
 	logger.Debug("authentication success")
 	id := AuthInfo.Id
-	player := &Player{
-		id:   AuthInfo.Id,
-		conn: conn,
+	player := structs.Player{
+		ID:   AuthInfo.Id,
+		Conn: conn,
 	}
 	t.clientMap.Store(id, player)
 	logger.Debug("client connected as id: " + id)

@@ -3,12 +3,12 @@ package handler
 import (
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/structs"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/logger"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
@@ -44,11 +44,11 @@ func (t *tcpHandler) HandlePacket() { // handlePacket 함수는 하나의 고루
 	for { // 데이터를 받아와 데이터의 종류마다 다른 메소드로 핸들링.
 		data := <-t.tcpChannels.FromClient
 		logger.Debug("byte data: " + fmt.Sprint(data))
+
 		if err := t.parser.Unmarshal(data); err != nil {
 			logger.Error(err.Error())
 			t.tcpChannels.ErrChan <- err
 		}
-
 		logger.Debug("function: " + t.parser.Function())
 		logger.Debug("data: " + t.parser.Data())
 
@@ -61,16 +61,16 @@ func (t *tcpHandler) HandlePacket() { // handlePacket 함수는 하나의 고루
 func (t *tcpHandler) readPacket() {
 	for { // 계속 실행되어야 하므로 무한 loop
 		t.clientMap.Range(func(key, value any) bool {
-			if conn, ok := value.(net.Conn); ok {
+			if player, ok := value.(structs.Player); ok {
 				buf := make([]byte, 1024)
 				logger.Debug("waiting to read from id: " + key.(string))
-				err := conn.SetReadDeadline(time.Now().Add(1 * time.Millisecond))
+				err := player.Conn.SetReadDeadline(time.Now().Add(1 * time.Millisecond))
 				if err != nil {
 					logger.Error("error while setting deadline to connection: " + key.(string))
-					t.removeClient(key.(string), conn)
+					t.removeClient(key.(string), player)
 					return true
 				}
-				n, err := conn.Read(buf) // non-blocking, 여기서 멈춤 여기 context deadline 추가
+				n, err := player.Conn.Read(buf) // non-blocking, 여기서 멈춤 여기 context deadline 추가
 				logger.Debug("message read: length " + strconv.Itoa(n))
 
 				if err != nil {
@@ -79,11 +79,12 @@ func (t *tcpHandler) readPacket() {
 					}
 					if err != io.EOF {
 						logger.Error("error on reading from connection from: " + key.(string) + err.Error())
-						t.removeClient(key.(string), conn)
+						t.removeClient(key.(string), player)
 					}
 				}
 
 				if n > 0 { // 읽어들인 값이 없으면 채널에 값을 보내지 않음
+					logger.Debug("send data to tcpChannels.FromClient")
 					t.tcpChannels.FromClient <- buf[:n]
 				}
 			}
@@ -94,17 +95,17 @@ func (t *tcpHandler) readPacket() {
 
 func (t *tcpHandler) echoToAllClients(data []byte) {
 	t.clientMap.Range(func(key, value any) bool {
-		if conn, ok := value.(net.Conn); ok {
-			if _, err := conn.Write(data); err != nil {
+		if player, ok := value.(structs.Player); ok {
+			if _, err := player.Conn.Write(data); err != nil {
 				logger.Error("error on writing to connection to: " + key.(string))
-				t.removeClient(key.(string), conn)
+				t.removeClient(key.(string), player)
 			}
 		}
 		return true
 	})
 }
 
-func (t *tcpHandler) removeClient(uuid string, client net.Conn) {
-	defer client.Close()
-	t.clientMap.Delete(uuid)
+func (t *tcpHandler) removeClient(id string, client structs.Player) {
+	defer client.Conn.Close()
+	t.clientMap.Delete(id)
 }
