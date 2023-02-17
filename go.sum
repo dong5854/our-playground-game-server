@@ -4,6 +4,8 @@ github.com/Team-OurPlayground/idl v0.0.0-20230206235039-21acd750053d h1:kHNeOGUN
 github.com/Team-OurPlayground/idl v0.0.0-20230206235039-21acd750053d/go.mod h1:G0IqxRS3n9sAUdRpQoiButOqKaLotxMw/1yfk2o0X58=
 github.com/Team-OurPlayground/idl v0.0.0-20230211194644-c8f76d0c3ae2 h1:XhS4cFKtDd4WB4qqSWAMDLn8aZWQWwojvlI0srI54Ec=
 github.com/Team-OurPlayground/idl v0.0.0-20230211194644-c8f76d0c3ae2/go.mod h1:G0IqxRS3n9sAUdRpQoiButOqKaLotxMw/1yfk2o0X58=
+github.com/Team-OurPlayground/idl v0.0.0-20230217141807-18f18a78b299 h1:5H7OnIOokqKVcSHgMET11usMUPUPs3dZB4JPbRshRss=
+github.com/Team-OurPlayground/idl v0.0.0-20230217141807-18f18a78b299/go.mod h1:G0IqxRS3n9sAUdRpQoiButOqKaLotxMw/1yfk2o0X58=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
