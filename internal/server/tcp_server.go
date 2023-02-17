@@ -1,11 +1,14 @@
 package server
 
 import (
+	"io"
 	"log"
 	"net"
+	"strconv"
 	"sync"
 
-	"github.com/google/uuid"
+	"github.com/Team-OurPlayground/idl/goproto"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/logger"
@@ -50,9 +53,7 @@ func (t *tcpServer) Run() {
 			log.Panic(err)
 		}
 
-		id := uuid.New().String()
-		t.clientMap.Store(id, conn)
-		logger.Debug("client connected as id: " + id)
+		go t.authenticatePlayer(conn)
 
 		if len(t.ErrChan) != 0 {
 			err = <-t.ErrChan
@@ -60,4 +61,33 @@ func (t *tcpServer) Run() {
 			log.Panic(err)
 		}
 	}
+}
+
+func (t *tcpServer) authenticatePlayer(conn net.Conn) {
+	logger.Debug("start player authenticate process")
+	tokenByte := make([]byte, 1024) // 인증 토큰 값 읽어옴
+	n, err := conn.Read(tokenByte)
+	if err != nil {
+		if err != io.EOF {
+			logger.Error("error on reading tokenByte from connection")
+			conn.Close()
+			return
+		}
+	}
+	logger.Debug("tokenByte read: length" + strconv.Itoa(n))
+	AuthInfo := new(goproto.Authenticate)
+	if err := proto.Unmarshal(tokenByte[:n], AuthInfo); err != nil {
+		logger.Error("error unMarshaling authentication info")
+		conn.Close()
+		return
+	}
+	// TODO: jwt 토큰으로 인증하는 프로세스 개발 필요, 클라이언트 개발 편의성을 위해 후순위
+	logger.Debug("authentication success")
+	id := AuthInfo.Id
+	player := &Player{
+		id:   AuthInfo.Id,
+		conn: conn,
+	}
+	t.clientMap.Store(id, player)
+	logger.Debug("client connected as id: " + id)
 }
