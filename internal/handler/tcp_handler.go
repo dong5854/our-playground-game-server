@@ -17,6 +17,7 @@ import (
 const (
 	SetID        = "setID"
 	SimulateMove = "simulateMove"
+	SetPosition  = "setPosition"
 	MaxUser      = 1000
 )
 
@@ -52,8 +53,13 @@ func (t *tcpHandler) HandlePacket() { // handlePacket 함수는 하나의 고루
 		logger.Debug("function: " + t.parser.Function())
 		logger.Debug("data: " + t.parser.Data())
 
-		if t.parser.Function() == SimulateMove {
+		switch t.parser.Function() {
+		case SimulateMove:
+			fallthrough
+		case SetPosition:
 			go t.echoToAllClients(data)
+		default:
+			logger.Error("undefined function")
 		}
 	}
 }
