@@ -1,4 +1,4 @@
-package parser
+package packets
 
 import "github.com/Team-OurPlayground/idl/FBPacket"
 
@@ -10,7 +10,7 @@ type ChatParser interface {
 	Type() string
 }
 
-type Chat interface {
+type ChatCreator interface {
 	Create(message string, senderID string, receiverID string, chatType FBPacket.ChatType) []byte
 }
 

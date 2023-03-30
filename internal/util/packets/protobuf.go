@@ -1,4 +1,4 @@
-package parser
+package packets
 
 import (
 	"github.com/Team-OurPlayground/idl/goproto"
