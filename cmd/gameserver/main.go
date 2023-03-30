@@ -6,13 +6,13 @@ import (
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/server"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/logger"
-	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/packets"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
 
 func main() {
 	// TODO: heartbeat 추가하기
-	parser := parser.NewProtobufParser()
+	chatParser := packets.NewChatParser()
 	tcpChannels := &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
@@ -20,7 +20,7 @@ func main() {
 	}
 	clientMap := new(sync.Map)
 
-	tcpHandler := handler.NewTCPHandler(parser, tcpChannels, clientMap)
+	tcpHandler := handler.NewTCPHandler(chatParser, tcpChannels, clientMap)
 	server := server.NewTCPServer("0.0.0.0:6112", tcpHandler, clientMap)
 	server.Run()
 

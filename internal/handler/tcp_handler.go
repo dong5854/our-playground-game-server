@@ -10,28 +10,28 @@ import (
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/structs"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/logger"
-	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/packets"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
 
 const (
-	SetID        = "setID"
-	SimulateMove = "simulateMove"
-	SetPosition  = "setPosition"
-	MaxUser      = 1000
+	ChatTypeCHAT    = "CHAT"
+	ChatTypeWHISPER = "WHISPER"
+	ChatTypeSYSTEM  = "SYSTEM"
+	MaxUser         = 1000
 )
 
 type tcpHandler struct {
-	parser      parser.Parser
+	chatParser  packets.ChatParser
 	clientMap   *sync.Map
 	tcpChannels *threadsafe.TCPChannels
 }
 
-func NewTCPHandler(parser parser.Parser, tcpChannels *threadsafe.TCPChannels, ClientMap *sync.Map) TCPHandler {
+func NewTCPHandler(chatParser packets.ChatParser, tcpChannels *threadsafe.TCPChannels, clientMap *sync.Map) TCPHandler {
 	return &tcpHandler{
-		parser:      parser,
+		chatParser:  chatParser,
 		tcpChannels: tcpChannels,
-		clientMap:   ClientMap,
+		clientMap:   clientMap,
 	}
 }
 
@@ -42,21 +42,15 @@ func (t *tcpHandler) TCPChannel() *threadsafe.TCPChannels {
 func (t *tcpHandler) HandlePacket() { // handlePacket 함수는 하나의 고루틴에서만 돌아감
 	go t.readPacket() // 패킷을 읽어들이는 고루틴 하나 생성
 
-	for { // 데이터를 받아와 데이터의 종류마다 다른 메소드로 핸들링.
+	for { // 데이터를 받아와 채팅의 종류에 따라 처리하는 고루틴
 		data := <-t.tcpChannels.FromClient
 		logger.Debug("byte data: " + fmt.Sprint(data))
 
-		if err := t.parser.Unmarshal(data); err != nil {
-			logger.Error(err.Error())
-			t.tcpChannels.ErrChan <- err
-		}
-		logger.Debug("function: " + t.parser.Function())
-		logger.Debug("data: " + t.parser.Data())
+		t.chatParser.Parse(data)
+		logger.Debug("Message: " + t.chatParser.Message())
 
-		switch t.parser.Function() {
-		case SimulateMove:
-			fallthrough
-		case SetPosition:
+		switch t.chatParser.Type() {
+		case ChatTypeCHAT:
 			go t.echoToAllClients(data)
 		default:
 			logger.Error("undefined function")

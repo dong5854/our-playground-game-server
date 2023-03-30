@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/Team-OurPlayground/idl/goproto"
-	"google.golang.org/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/structs"
