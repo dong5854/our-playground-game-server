@@ -1,30 +1,35 @@
 package server_test
 
 import (
+	"io"
 	"net"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/Team-OurPlayground/idl/FBPacket"
 	"github.com/Team-OurPlayground/idl/goproto"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/handler"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/server"
-	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/parser"
+	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/packets"
 	"github.com/Team-OurPlayground/our-playground-game-server/internal/util/threadsafe"
 )
 
 type tcpServerSuite struct {
 	suite.Suite
-	server     server.TCPServer
-	finishChan chan struct{}
-	once       sync.Once
+	server      server.TCPServer
+	chatCreator packets.ChatCreator
+	finishChan  chan struct{}
+	once        sync.Once
 }
 
 func (suite *tcpServerSuite) SetupSuite() {
 	suite.finishChan = make(chan struct{})
-	parser := parser.NewProtobufParser()
+	suite.chatCreator = packets.NewChatCreator()
+	chatParser := packets.NewChatParser()
 	tcpChannels := &threadsafe.TCPChannels{
 		FromClient: make(chan []byte, handler.MaxUser),
 		ToClient:   make(chan []byte, handler.MaxUser),
@@ -32,14 +37,14 @@ func (suite *tcpServerSuite) SetupSuite() {
 	}
 	clientMap := new(sync.Map)
 
-	tcpHandler := handler.NewTCPHandler(parser, tcpChannels, clientMap)
-	suite.server = server.NewTCPServer("127.0.0.1:6112", tcpHandler, clientMap)
+	tcpHandler := handler.NewTCPHandler(chatParser, tcpChannels, clientMap)
+	suite.server = server.NewTCPServer("127.0.0.1:64202", tcpHandler, clientMap)
 	go suite.server.Run()
 }
 
 func (suite *tcpServerSuite) TestDial() {
 	suite.T().Log("dial start")
-	conn, err := net.Dial("tcp", "127.0.0.1:6112")
+	conn, err := net.Dial("tcp", "127.0.0.1:64202")
 	if err != nil {
 		suite.NoError(err, "net.Dial Error")
 	}
@@ -61,47 +66,44 @@ func (suite *tcpServerSuite) TestDial() {
 		suite.NoError(err, "conn write Error")
 	}
 	suite.T().Log("sent authInfo")
+	time.Sleep(500 * time.Millisecond)
 	// 인증 끝
 
-	// 메시지 수신 handler.SimulateMove
+	// 메시지 수신
 	go func() {
 		receivedBuf := make([]byte, 1024)
+		suite.T().Log("waiting to receive Message")
 		n, err := conn.Read(receivedBuf)
 		if err != nil {
-			suite.NoError(err, "conn read Error")
+			if err != io.EOF {
+				suite.NoError(err, "conn read Error")
+			}
 		}
-		suite.T().Log(n)
-		receivedProto := new(goproto.Data)
-		if err := proto.Unmarshal(receivedBuf[:n], receivedProto); err != nil {
-			suite.NoError(err, "proto unmarshal error")
-		}
-		suite.Equal("dong5854", receivedProto.Data)
-		suite.Equal(handler.SimulateMove, receivedProto.Function)
+
+		chatParser := packets.NewChatParser()
+		chatParser.Parse(receivedBuf[:n])
+
+		suite.Equal("helloWorld", chatParser.Message())
+		suite.Equal("dong5854", chatParser.SenderID())
+		suite.Equal("novaeric", chatParser.ReceiverID())
+		suite.Equal(handler.ChatTypeCHAT, chatParser.Type())
 		suite.once.Do(func() {
 			suite.finishChan <- struct{}{}
 		})
 	}()
 
-	echoMessage := &goproto.Data{
-		Function: handler.SimulateMove,
-		Data:     "dong5854",
-		Dx:       1.2,
-		Dy:       1.3,
-	}
+	chatByte := suite.chatCreator.Create("helloWorld", "dong5854", "novaeric", FBPacket.ChatTypeCHAT)
 
-	echoMessageByte, err := proto.Marshal(echoMessage)
-	if err != nil {
-		suite.NoError(err, "proto Marshal Error")
-	}
-
-	// 메시지 전송 handler.SimulateMove
+	// 메시지 전송
 	suite.T().Log("send message")
 	go func() {
 		for {
-			_, err = conn.Write(echoMessageByte)
+			suite.T().Log(chatByte)
+			_, err = conn.Write(chatByte)
 			if err != nil {
 				suite.NoError(err, "conn write Error")
 			}
+			time.Sleep(1 * time.Second) // 1초마다 메시지 전송
 		}
 	}()
 
